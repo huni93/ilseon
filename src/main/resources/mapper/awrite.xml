@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.com.com.Aproject.dao.ABoardDao">
+
+	<!-- ABoard에 대한 resultMap -->
+	<resultMap id="ABoardResultMap"
+		type="com.com.com.Aproject.dto.ABoard">
+		<id property="seq" column="SEQ" />
+		<result property="memberId" column="MEMBER_ID" />
+		<result property="boardTitle" column="BOARD_TITLE" />
+		<result property="boardContent" column="BOARD_CONTENT" />
+		<result property="regDate" column="REG_DATE" />
+		<result property="apprDate" column="APPR_DATE" />
+		<result property="approver" column="APPROVER" />
+		<result property="apprstat" column="APPR_STAT" />
+		<result property="memberName" column="MEMBER_NAME" />
+		<result property="proxyDate" column="PROXY_DATE" />
+		<result property="proxyName" column="PROXY_NAME" />
+	</resultMap>
+
+
+	<!-- 글 작성 -->
+	<insert id="save"
+		parameterType="com.com.com.Aproject.dto.ABoard">
+		<selectKey keyProperty="seq" resultType="int" order="BEFORE">
+			SELECT
+			NVL(MAX(SEQ), 0) + 1 FROM A_BOARD
+		</selectKey>
+		INSERT INTO A_BOARD (SEQ, MEMBER_ID, BOARD_TITLE, BOARD_CONTENT,
+		REG_DATE, APPR_DATE, APPROVER, APPR_STAT)
+		VALUES (#{seq}, #{memberId},
+		#{boardTitle}, #{boardContent}, SYSDATE,
+		#{apprDate,jdbcType=TIMESTAMP}, #{approver,jdbcType=VARCHAR},
+		#{apprstat,jdbcType=VARCHAR})
+	</insert>
+
+	<!-- 내가 쓴 리스트만 -->
+	<select id="getBoardsByMemberId" parameterType="String" resultMap="ABoardResultMap">
+      
+        SELECT  
+        B.SEQ, 
+        B.MEMBER_ID, 
+        B.BOARD_TITLE, 
+        B.BOARD_CONTENT, 
+        B.REG_DATE,
+        B.APPR_DATE, 
+        (SELECT M.MEMBER_NAME FROM A_MEMBER M WHERE M.MEMBER_ID = B.APPROVER) AS APPROVER, 
+        B.APPR_STAT, 
+        M.MEMBER_NAME
+        FROM A_MEMBER M
+        JOIN A_BOARD B ON M.MEMBER_ID = B.MEMBER_ID
+        WHERE M.MEMBER_ID = #{memberId}
+          AND M.MEMBER_RANK != '004' 
+        ORDER BY B.SEQ DESC
+        
+    </select>
+
+
+	<!-- 게시글 상세 조회 쿼리 -->
+	<select id="getBoard" resultMap="ABoardResultMap">
+		SELECT B.SEQ, B.MEMBER_ID, B.BOARD_TITLE, B.BOARD_CONTENT, B.REG_DATE, B.APPR_DATE, B.APPROVER, B.APPR_STAT, M.MEMBER_NAME
+    FROM A_BOARD B
+    JOIN A_MEMBER M ON B.MEMBER_ID = M.MEMBER_ID
+    WHERE B.SEQ = #{seq}
+	</select>
+
+	<!-- 추가: 마지막 글 번호 조회 -->
+	<select id="getLastBoardSeq" resultType="int">
+		SELECT
+		COALESCE(MAX(seq), 0) FROM A_BOARD
+	</select>
+
+	<!-- 003rank과장 일때 모든 게시글 조회 쿼리, 과장이 반려한 글 포함 -->
+	<select id="getAllBoards" resultMap="ABoardResultMap">
+    SELECT DISTINCT 
+        B.SEQ, 
+        B.MEMBER_ID, 
+        B.BOARD_TITLE, 
+        B.BOARD_CONTENT, 
+        B.REG_DATE,
+        B.APPR_DATE, 
+        (SELECT M.MEMBER_NAME FROM A_MEMBER M WHERE M.MEMBER_ID = B.APPROVER) AS APPROVER, 
+        B.APPR_STAT, 
+        M.MEMBER_NAME
+    FROM 
+        A_BOARD B
+    JOIN 
+        A_MEMBER M ON B.MEMBER_ID = M.MEMBER_ID
+    LEFT JOIN 
+        A_HISTORY H ON B.SEQ = H.HI_NO
+    LEFT JOIN 
+        A_PROXY P ON P.PROXY_ID = B.APPROVER
+    WHERE (
+		    (B.APPR_STAT = '03' AND B.APPROVER = #{memberId})   
+		    OR (B.APPR_STAT = '02')  
+		    OR (B.APPR_STAT in ('01','03') AND B.MEMBER_ID = #{memberId})  
+		    OR (B.APPR_STAT = '05' AND B.APPROVER = #{memberId})  
+		    OR (H.APPROVAL = #{memberId} AND H.SIGN_STATUS = '03')  
+		)
+		ORDER BY B.SEQ DESC
+</select>
+
+
+	<!-- 사용자 정보 조회 -->
+	<select id="getMemberById" parameterType="String"
+		resultMap="AMemberResultMap">
+		SELECT MEMBER_ID, MEMBER_NAME, MEMBER_PW, MEMBER_RANK
+		FROM
+		A_MEMBER
+		WHERE MEMBER_ID = #{memberId}
+	</select>
+
+	<!-- 게시글 상태 업데이트 -->
+<update id="updateBoard" parameterType="com.com.com.Aproject.dto.ABoard">
+    UPDATE A_BOARD b
+    INNER JOIN A_MEMBER m ON b.MEMBER_ID = m.MEMBER_ID
+    SET 
+        b.BOARD_TITLE = #{boardTitle},
+        b.BOARD_CONTENT = #{boardContent},
+        b.APPR_DATE = #{apprDate,jdbcType=TIMESTAMP},
+        b.APPROVER = (
+            SELECT MEMBER_ID FROM A_MEMBER WHERE MEMBER_ID = #{approverId}
+        ),
+        b.APPR_STAT = #{apprstat,jdbcType=VARCHAR},
+        b.MEMBER_NAME = m.MEMBER_NAME
+    WHERE b.SEQ = #{seq}
+</update>
+
+
+
+
+	<!-- 부장님쿼리 -->
+	<select id="getApprovalPendingBoards" resultMap="ABoardResultMap">
+    SELECT 
+    	B.SEQ, 
+    	B.MEMBER_ID, 
+    	B.BOARD_TITLE, B.BOARD_CONTENT,
+    	B.REG_DATE, B.APPR_DATE,
+    	(SELECT M.MEMBER_NAME FROM A_MEMBER M WHERE M.MEMBER_ID = B.APPROVER) AS APPROVER,
+    	B.APPR_STAT, M.MEMBER_NAME
+    FROM A_BOARD B
+    JOIN A_MEMBER M ON B.MEMBER_ID = M.MEMBER_ID
+    WHERE B.APPR_STAT IN ('03', '04')
+       OR (B.APPR_STAT = '05' )
+    ORDER BY B.SEQ DESC
+</select>
+
+	<!-- 게시글 수정 쿼리 -->
+	<update id="updateBoardWithApproval"
+		parameterType="com.com.com.Aproject.dto.ABoard">
+		UPDATE A_BOARD
+		SET BOARD_TITLE = COALESCE(#{boardTitle},
+		BOARD_TITLE),
+		BOARD_CONTENT = COALESCE(#{boardContent}, BOARD_CONTENT),
+		APPR_DATE = #{apprDate, jdbcType=TIMESTAMP},
+		APPROVER = #{approver,
+		jdbcType=VARCHAR},
+		APPR_STAT = #{apprstat, jdbcType=VARCHAR}
+		WHERE SEQ =
+		#{seq}
+	</update>
+
+
+ <!-- 검색 기능 -->
+    <select id="AsearchBoard" parameterType="map" resultMap="ABoardResultMap">
+    SELECT b.SEQ, b.MEMBER_ID, b.BOARD_TITLE , b.BOARD_CONTENT , 
+           b.REG_DATE, b.APPR_DATE, b.APPROVER, b.APPR_STAT , m.MEMBER_NAME
+    FROM A_BOARD b
+    INNER JOIN A_MEMBER m ON b.MEMBER_ID = m.MEMBER_ID
+    WHERE 1=1
+    <if test="searchType != null and searchType != ''">
+        <choose>
+            <when test="searchType == 'boardTitle'">
+                AND b.BOARD_TITLE LIKE '%' || #{searchKeyword} || '%'
+            </when>              
+            <when test="searchType == 'memberName'">
+                AND b.MEMBER_ID IN (SELECT MEMBER_ID FROM A_MEMBER WHERE MEMBER_NAME LIKE '%' || #{searchKeyword} || '%')
+            </when>
+            <when test="searchType == 'boardContent'">
+                AND (b.BOARD_TITLE LIKE '%' || #{searchKeyword} || '%'
+                     OR b.BOARD_CONTENT LIKE '%' || #{searchKeyword} || '%')
+            </when>
+        </choose>
+    </if>
+    <if test="startDate != null and startDate != ''">
+        AND b.REG_DATE &gt;= TO_DATE(#{startDate}, 'YYYY-MM-DD')
+    </if>
+    <if test="endDate != null and endDate != ''">
+        AND b.REG_DATE &lt;= TO_DATE(#{endDate}, 'YYYY-MM-DD') + 1
+    </if>
+    <choose>
+        <when test="memberRank == '001' || memberRank == '002'">
+            AND b.MEMBER_ID = #{memberId}
+        </when>
+        <when test="memberRank == '003'">
+            AND (
+                (b.APPR_STAT = '02')
+                OR (b.APPR_STAT = '03' AND b.APPROVER = #{memberName})
+                OR (b.APPR_STAT = '05' AND b.APPROVER = #{memberName})
+                OR (b.MEMBER_ID = #{memberId})
+            )
+        </when>
+        <when test="memberRank == '004'">
+            AND (           
+                   b.APPR_STAT = '03'
+                OR b.APPR_STAT = '04'
+                OR (b.APPR_STAT = '05' AND b.APPROVER = #{memberName})
+            )
+        </when>
+    </choose>
+    ORDER BY b.SEQ DESC
+</select>
+
+
+<!-- AJAX 필터링 쿼리 -->
+<select id="getBoardsByApprovalStatus" parameterType="map" resultMap="ABoardResultMap">
+    SELECT B.SEQ, B.MEMBER_ID, B.BOARD_TITLE, B.BOARD_CONTENT,
+           B.REG_DATE, B.APPR_DATE, B.APPROVER, B.APPR_STAT, M.MEMBER_NAME
+    FROM A_BOARD B
+    JOIN A_MEMBER M ON B.MEMBER_ID = M.MEMBER_ID
+    WHERE B.APPR_STAT = #{approvalStatus}
+    <if test="searchType != null and searchType != ''">
+        <choose>
+            <when test="searchType == 'boardTitle'">
+                AND B.BOARD_TITLE LIKE '%' || #{searchKeyword} || '%'
+            </when>
+            <when test="searchType == 'memberName'">
+                AND B.MEMBER_ID IN (SELECT MEMBER_ID FROM A_MEMBER WHERE MEMBER_NAME LIKE '%' || #{searchKeyword} || '%')
+            </when>
+            <when test="searchType == 'boardContent'">
+                AND (B.BOARD_TITLE LIKE '%' || #{searchKeyword} || '%'
+                     OR B.BOARD_CONTENT LIKE '%' || #{searchKeyword} || '%')
+            </when>
+        </choose>
+    </if>
+    <if test="startDate != null and startDate != ''">
+        AND B.REG_DATE &gt;= TO_DATE(#{startDate}, 'YYYY-MM-DD')
+    </if>
+    <if test="endDate != null and endDate != ''">
+        AND B.REG_DATE &lt;= TO_DATE(#{endDate}, 'YYYY-MM-DD') + 1
+    </if>
+    <choose>
+        <when test="memberRank == '001' || memberRank == '002'">
+            AND B.MEMBER_ID = #{memberId}
+        </when>
+        <when test="memberRank == '003'">
+            AND (
+                (B.APPR_STAT = '02')
+                OR (B.APPR_STAT = '03' AND B.APPROVER = #{memberName})
+                OR (B.APPR_STAT = '05' AND B.APPROVER = #{memberName})
+                OR (B.MEMBER_ID = #{memberId})
+            )
+        </when>
+        <when test="memberRank == '004'">
+            AND (          
+                   B.APPR_STAT = '03'
+                OR B.APPR_STAT = '04'
+                OR (B.APPR_STAT = '05' AND B.APPROVER = #{memberName})
+            )
+        </when>
+    </choose>
+    ORDER BY B.SEQ DESC
+</select>
+
+
+</mapper>

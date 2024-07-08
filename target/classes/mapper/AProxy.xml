@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.com.com.Aproject.dao.AProxyDao">
+
+<resultMap id="ProxyResultMap" type="com.com.com.Aproject.dto.AProxy">
+    <result property="proxyId" column="PROXY_ID" />
+    <result property="proxyName" column="PROXY_NAME" />
+    <result property="apperId" column="APPER_ID" />
+    <result property="proxyDate" column="PROXY_DATE" />
+    <result property="proxyRank" column="PROXY_RANK" />
+    <result property="apperName" column="APPER_NAME" />
+    <result property="memberRank" column="MEMBER_RANK" />
+</resultMap>
+
+<select id="selectProxy" parameterType="map" resultMap="ProxyResultMap">
+    SELECT 
+        P.PROXY_ID, 
+        P.PROXY_NAME, 
+        P.APPER_ID, 
+        P.PROXY_DATE, 
+        P.PROXY_RANK, 
+        M.MEMBER_RANK  <!-- 멤버 테이블에서 직급을 가져옵니다 -->
+    FROM 
+        A_PROXY P
+    JOIN 
+        A_MEMBER M ON P.PROXY_ID = M.MEMBER_ID  <!-- 대리결재자의 멤버 ID를 기반으로 조인 -->
+    WHERE 
+        P.PROXY_RANK = 'N'
+        AND M.MEMBER_RANK IN
+        <choose>
+            <when test="memberRank == '004'">
+                ('002', '003')
+            </when>
+            <when test="memberRank == '003'">
+                ('001', '002')
+            </when>
+            <otherwise>
+                ('001', '002', '003')  <!-- 예시로 기본값 설정 -->
+            </otherwise>
+        </choose>
+</select>
+
+<update id="updateProxy" parameterType="map">
+    UPDATE A_PROXY
+    SET PROXY_DATE = SYSDATE,
+        APPER_ID = #{memberId},       
+        PROXY_RANK = #{memberRank}
+    WHERE PROXY_ID = #{proxyId}
+</update>
+
+<select id="getProxyInfoByMemberId" parameterType="String" resultMap="ProxyResultMap">
+       SELECT 
+        P.PROXY_ID,
+        P.PROXY_NAME,
+        P.APPER_ID,
+        P.PROXY_DATE,
+        P.PROXY_RANK,
+        M.MEMBER_NAME AS APPER_NAME  
+    FROM 
+        A_PROXY P
+    JOIN 
+        A_MEMBER M ON P.APPER_ID = M.MEMBER_ID  -- 대리결재자 ID와 멤버 ID를 조인
+    WHERE 
+        P.PROXY_ID = #{memberId}
+    </select>
+    
+<update id="revertProxy">
+    UPDATE A_PROXY
+    SET APPER_ID = NULL,
+        PROXY_DATE = NULL,
+        PROXY_RANK = 'N'
+    WHERE TRUNC(PROXY_DATE) != TRUNC(SYSDATE)
+</update>
+
+</mapper>

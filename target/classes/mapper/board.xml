@@ -1,0 +1,101 @@
+<!-- BoardMapper.xml -->
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.com.com.dao.BoardDao">
+
+	<resultMap id="Board" type="com.com.com.dto.Board">
+		<result property="seq" column="seq" />
+		<result property="mem_id" column="mem_id" />
+		<result property="mem_name" column="mem_name" />
+		<result property="board_subject" column="board_subject" />
+		<result property="board_content" column="board_content" />
+		<result property="reg_date" column="reg_date" />
+		<result property="upt_date" column="upt_date" />
+		<result property="view_cnt" column="view_cnt" />
+		<result property="useyn" column="useyn" />
+		
+	</resultMap>
+
+	<select id="boardList" resultMap="Board">
+		SELECT seq, mem_name,
+		board_subject, reg_date, upt_date, view_cnt
+		FROM board_study
+		ORDER BY
+		SEQ DESC
+	</select>
+
+
+
+	<!-- 게시글 등록 쿼리 -->
+	<insert id="insertBoard" parameterType="com.com.com.dto.Board">
+		<selectKey keyProperty="seq" resultType="int" order="BEFORE">
+			SELECT NVL(MAX(seq), 0) + 1 FROM BOARD_STUDY
+		</selectKey>
+		INSERT INTO BOARD_STUDY(mem_Name, mem_Id, board_Subject,
+		board_Content, reg_Date, view_Cnt, SEQ, USEYN)
+		VALUES (#{mem_name}, #{mem_id}, #{board_subject}, #{board_content}, SYSDATE,
+		0, #{seq}, #{useyn, jdbcType=VARCHAR})
+	</insert>
+
+
+	<!-- 게시글 삭제 쿼리 -->
+	<delete id="deleteBoard" parameterType="long">
+		DELETE FROM BOARD_STUDY
+		WHERE SEQ = #{seq}
+	</delete>
+
+	<!-- 게시글 상세 보기 -->
+	<select id="getBoard" parameterType="long" resultMap="Board">
+		SELECT seq, mem_id, mem_name, board_subject, board_content, reg_date,
+		upt_date, view_cnt, useyn
+		FROM board_study
+		WHERE seq = #{seq}
+	</select>
+
+	<!-- 게시글 수정하기 -->
+	<update id="updateBoard" parameterType="com.com.com.dto.Board">
+		UPDATE board_study
+		SET mem_name = #{mem_name}, mem_id = #{mem_id}, board_subject =
+		#{board_subject},
+		board_content = #{board_content}, upt_date = SYSDATE
+		WHERE seq = #{seq}
+	</update>
+
+	<!-- 조회수 증가 -->
+	<update id="increaseViewCount" parameterType="long">
+		UPDATE board_study
+		SET view_cnt = view_cnt + 1
+		WHERE seq = #{seq}
+	</update>
+
+	<!-- 검색 쿼리 -->
+    <select id="searchBoard" parameterType="map" resultMap="Board">
+        SELECT seq, mem_id, mem_name, board_subject, board_content, reg_date,
+        upt_date, view_cnt, useyn
+        FROM board_study
+        WHERE 1=1
+        <if test="searchType != null and searchType != ''">
+            <choose>
+                <when test="searchType == 'subject'">
+                    AND board_subject LIKE '%' || #{searchKeyword} || '%'
+                </when>              
+                <when test="searchType == 'mem_name'">
+                    AND mem_name LIKE '%' || #{searchKeyword} || '%'
+                </when>
+                <when test="searchType == 'subject_content'">
+                    AND (board_subject LIKE '%' || #{searchKeyword} || '%'
+                         OR board_content LIKE '%' || #{searchKeyword} || '%')
+                </when>
+            </choose>
+        </if>
+        <if test="startDate != null and startDate != ''">
+            AND reg_date &gt;= TO_DATE(#{startDate}, 'YYYY-MM-DD')
+        </if>
+        <if test="endDate != null and endDate != ''">
+            AND reg_date &lt;= TO_DATE(#{endDate}, 'YYYY-MM-DD') + 1
+        </if>
+        ORDER BY SEQ DESC
+    </select>
+</mapper>
