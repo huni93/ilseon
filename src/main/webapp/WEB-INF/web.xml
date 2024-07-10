@@ -24,6 +24,16 @@
 			<param-value>/WEB-INF/spring/appServlet/servlet-context.xml</param-value>
 		</init-param>
 		<load-on-startup>1</load-on-startup>
+		
+		 <!-- Add multipart config here -->
+    <multipart-config>
+        <!-- Max file size (e.g., 5 MB) -->
+        <max-file-size>5242880</max-file-size>
+        <!-- Max request size (e.g., 20 MB) -->
+        <max-request-size>20971520</max-request-size>
+        <!-- File size threshold after which files will be written to disk -->
+        <file-size-threshold>0</file-size-threshold>
+    </multipart-config>
 	</servlet>
 
 	<servlet-mapping>
@@ -47,5 +57,7 @@
 		<filter-name>encodingFilter</filter-name>
 		<url-pattern>/*</url-pattern>
 	</filter-mapping>
+	
+	
 
 </web-app>

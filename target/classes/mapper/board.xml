@@ -17,6 +17,16 @@
 		<result property="useyn" column="useyn" />
 		
 	</resultMap>
+	
+	<resultMap id="file" type="com.com.com.dto.FileUp">
+    <result property="fileSeq" column="FILE_SEQ" />
+    <result property="realName" column="REAL_NAME"/>
+    <result property="saveName" column="SAVE_NAME" />
+    <result property="regDate" column="REG_DATE" />
+    <result property="savePath" column="SAVE_PATH" />
+    <result property="listSeq" column="LIST_SEQ" />
+    </resultMap>
+	
 
 	<select id="boardList" resultMap="Board">
 		SELECT seq, mem_name,
@@ -98,4 +108,17 @@
         </if>
         ORDER BY SEQ DESC
     </select>
+    
+    
+   <insert id="insertFile" parameterType="com.com.com.dto.FileUp">
+    INSERT INTO FILE_STUDY_TABLE 
+    (FILE_SEQ, 
+    REAL_NAME, 
+    SAVE_NAME, 
+    REG_DATE, 
+    SAVE_PATH, 
+    LIST_SEQ)
+    SELECT NVL(MAX(FILE_SEQ), 0) + 1, #{realName}, #{saveName}, #{regDate}, #{savePath}, #{listSeq}
+    FROM FILE_STUDY_TABLE
+</insert>
 </mapper>

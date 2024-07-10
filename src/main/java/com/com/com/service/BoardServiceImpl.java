@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import com.com.com.dao.BoardDao;
 import com.com.com.dto.Board;
+import com.com.com.dto.FileUp;
 
 
 
@@ -53,6 +54,11 @@ public class BoardServiceImpl implements BoardService {
    @Override
    public List<Board> searchBoard(String searchType, String searchKeyword, String startDate, String endDate) {
        return boardDao.searchBoard(searchType, searchKeyword, startDate, endDate);
+   }
+   
+   @Override
+   public void saveFile(FileUp file) {
+       boardDao.insertFile(file);
    }
    
 }

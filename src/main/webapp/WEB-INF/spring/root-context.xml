@@ -43,6 +43,13 @@
 		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
 		<property name="dataSource" ref="dataSource" />
 	</bean>
+	
+
+	<bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+    <property name="maxUploadSize" value="20971520"/> <!-- 업로드 파일 크기 제한 (예: 20MB) -->
+</bean>
+	
+	
 
 	<!-- 패키지 스캔 설정 -->
 	<context:component-scan

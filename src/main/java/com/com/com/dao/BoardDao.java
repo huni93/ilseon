@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import com.com.com.dto.Board;
+import com.com.com.dto.FileUp;
 
 @Repository
 public class BoardDao {
@@ -59,6 +60,11 @@ public class BoardDao {
 	        params.put("startDate", startDate);
 	        params.put("endDate", endDate);
 	        return session.selectList("com.com.com.dao.BoardDao.searchBoard", params);
+	    }
+	 
+	 
+	    public void insertFile(FileUp file) {
+		 session.insert("com.com.com.dao.BoardDao.insertFile", file);
 	    }
 	
 }
