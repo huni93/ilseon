@@ -121,4 +121,17 @@
     SELECT NVL(MAX(FILE_SEQ), 0) + 1, #{realName}, #{saveName}, #{regDate}, #{savePath}, #{listSeq}
     FROM FILE_STUDY_TABLE
 </insert>
+
+<select id="getFiles" parameterType="long" resultMap="file">
+SELECT
+    b.SEQ,
+    f.REAL_NAME,
+    f.LIST_SEQ 
+FROM
+    BOARD_STUDY b
+    LEFT JOIN FILE_STUDY_TABLE f ON b.SEQ = f.LIST_SEQ
+WHERE
+    b.SEQ = #{seq}
+</select>
+
 </mapper>

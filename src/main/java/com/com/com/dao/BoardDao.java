@@ -66,5 +66,9 @@ public class BoardDao {
 	    public void insertFile(FileUp file) {
 		 session.insert("com.com.com.dao.BoardDao.insertFile", file);
 	    }
-	
+	    
+	    public List<FileUp> getFilesByBoardSeq(long seq) {
+	        return session.selectList("com.com.com.dao.BoardDao.getFiles", seq);
+	    }
+	 
 }

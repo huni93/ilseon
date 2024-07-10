@@ -129,6 +129,15 @@
         <input type="file" name="files" accept="image/*" onchange="addFileInputIfNeeded(this); validateImageSize(this);">
     </div>
     </div>
+    
+    <div>
+    <h3>첨부파일</h3>
+    <ul>
+        <c:forEach var="file" items="${files}">
+            <li>${file.realName}</li>
+        </c:forEach>
+    </ul>
+</div>
 	
 </form>
 </body>

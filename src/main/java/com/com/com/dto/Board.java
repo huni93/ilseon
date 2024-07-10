@@ -1,6 +1,7 @@
 package com.com.com.dto;
 
 import java.util.Date;
+import java.util.List;
 
 public class Board {
 
@@ -66,6 +67,13 @@ public class Board {
 	}
 	public void setUseyn(String useyn) {
 		this.useyn = useyn;
+	}
+	
+	@Override
+	public String toString() {
+		return "Board [seq=" + seq + ", mem_name=" + mem_name + ", mem_id=" + mem_id + ", board_subject="
+				+ board_subject + ", board_content=" + board_content + ", reg_date=" + reg_date + ", upt_date="
+				+ upt_date + ", view_cnt=" + view_cnt + ", useyn=" + useyn + "]";
 	}
 	
 	

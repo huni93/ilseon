@@ -21,6 +21,10 @@ public interface BoardService {
   
   List<Board> searchBoard(String searchType, String searchKeyword, String startDate, String endDate); // 검색
   
-  void saveFile(FileUp file);
+  void saveFile(FileUp file); //파일저장
+  
+  List<FileUp> getFilesByBoardSeq(long seq);// 파일목록
+  
+
 }
 

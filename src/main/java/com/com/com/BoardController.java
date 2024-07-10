@@ -1,6 +1,7 @@
 package com.com.com;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -36,14 +37,18 @@ public class BoardController {
 		if (seq != null) {
 			boardService.increaseViewCount(seq); // 조회수 증가
 			Board board = boardService.getBoard(seq);
+			List<FileUp> files = boardService.getFilesByBoardSeq(seq);
 			model.addAttribute("board", board);
-			model.addAttribute("mode", "update");
+			model.addAttribute("files", files); // 파일 목록 추가   
+			model.addAttribute("mode", "update");	
+
 		} else {
 			model.addAttribute("board", new Board());
 			model.addAttribute("mode", "create");
 		}
 		return "write";
 	}
+
 
 	@RequestMapping(value = "/write", method = RequestMethod.POST)
 	public String write(@ModelAttribute("board") Board board, 

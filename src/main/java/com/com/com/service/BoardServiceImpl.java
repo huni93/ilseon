@@ -61,4 +61,11 @@ public class BoardServiceImpl implements BoardService {
        boardDao.insertFile(file);
    }
    
+   @Override
+   public List<FileUp> getFilesByBoardSeq(long seq) {
+       return boardDao.getFilesByBoardSeq(seq);
+   }
+   
+  
+   
 }
