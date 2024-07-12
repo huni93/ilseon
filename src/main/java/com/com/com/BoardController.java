@@ -1,14 +1,34 @@
 package com.com.com;
 
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.util.ArrayList;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.file.Files;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.FileCopyUtils;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -21,6 +41,8 @@ import com.com.com.service.BoardService;
 
 @Controller
 public class BoardController {
+	
+	private static final Logger log = LoggerFactory.getLogger(BoardController.class);
 
 	@Autowired
 	private BoardService boardService;
@@ -36,11 +58,12 @@ public class BoardController {
 	public String showWriteForm(@RequestParam(value = "seq", required = false) Long seq, Model model) {
 		if (seq != null) {
 			boardService.increaseViewCount(seq); // 조회수 증가
-			Board board = boardService.getBoard(seq);
+			Board board = boardService.getBoard(seq);			
 			List<FileUp> files = boardService.getFilesByBoardSeq(seq);
 			model.addAttribute("board", board);
 			model.addAttribute("files", files); // 파일 목록 추가   
-			model.addAttribute("mode", "update");	
+			model.addAttribute("mode", "update");
+			System.out.println("Files::::: " + files);
 
 		} else {
 			model.addAttribute("board", new Board());
@@ -48,6 +71,93 @@ public class BoardController {
 		}
 		return "write";
 	}
+	
+	@RequestMapping(value = "/download", method = RequestMethod.GET)
+	public ResponseEntity<byte[]> fileDownload(@RequestParam("fileSeq") long fileSeq) throws IOException {
+	    FileUp fileUp = boardService.getFileBySeq(fileSeq);
+
+	    if (fileUp == null || fileUp.getSavePath() == null || fileUp.getSavePath().isEmpty()) {
+	        log.warn("Invalid file request: fileSeq = " + fileSeq);
+	        HttpHeaders headers = new HttpHeaders();
+	        headers.setContentType(MediaType.TEXT_PLAIN);
+	        return new ResponseEntity<byte[]>("Invalid parameters or file does not exist".getBytes(), headers, HttpStatus.BAD_REQUEST);
+	    }
+
+	    log.info("Downloading file: fileSeq = " + fileSeq + ", saveName = " + fileUp.getSaveName());
+	    
+	    // Use savePath directly without adding saveName to it
+	    String filePath = fileUp.getSavePath();
+
+	    File file = new File(filePath);
+	    if (!file.exists()) {
+	        log.error("File not found: " + filePath);
+	        HttpHeaders headers = new HttpHeaders();
+	        headers.setContentType(MediaType.TEXT_PLAIN);
+	        return new ResponseEntity<byte[]>("File not found".getBytes(), headers, HttpStatus.NOT_FOUND);
+	    }
+
+	    byte[] fileContent = Files.readAllBytes(file.toPath());
+	    HttpHeaders headers = new HttpHeaders();
+	    headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+	    String encodedFileName = URLEncoder.encode(fileUp.getRealName(), "UTF-8").replace("+", "%20");
+	    headers.setContentDispositionFormData("attachment", encodedFileName);
+
+	    return new ResponseEntity<byte[]>(fileContent, headers, HttpStatus.OK);
+	}
+	
+	 @RequestMapping(value = "/downloadExcel", method = RequestMethod.GET)
+	    public ResponseEntity<byte[]> downloadExcel() throws IOException {
+	        List<Board> boardList = boardService.list(new Board());
+
+	        // Null check for boardList
+	        if (boardList == null) {
+	            log.error("boardList is null");
+	            return new ResponseEntity<byte[]>(HttpStatus.INTERNAL_SERVER_ERROR);
+	        }
+
+	        Workbook workbook = new XSSFWorkbook();
+	        Sheet sheet = workbook.createSheet("게시판 목록");
+
+	        Row headerRow = sheet.createRow(0);
+	        String[] headers = {"글번호", "작성자", "제목", "작성일", "수정일", "조회수"};
+	        for (int i = 0; i < headers.length; i++) {
+	            headerRow.createCell(i).setCellValue(headers[i]);
+	        }
+
+	        int rowNum = 1;
+	        for (Board board : boardList) {
+	            Row row = sheet.createRow(rowNum++);
+	            row.createCell(0).setCellValue(board.getSeq());
+	            row.createCell(1).setCellValue(board.getMem_name());
+	            row.createCell(2).setCellValue(board.getBoard_subject());
+	            if (board.getReg_date() != null) {
+	                row.createCell(3).setCellValue(board.getReg_date().toString());
+	            }
+	            if (board.getUpt_date() != null) {
+	                row.createCell(4).setCellValue(board.getUpt_date().toString());
+	            }
+	            row.createCell(5).setCellValue(board.getView_cnt());
+	        }
+
+	        for (int i = 0; i < headers.length; i++) {
+	            sheet.autoSizeColumn(i);
+	        }
+
+	        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+	        workbook.write(byteArrayOutputStream);
+	        workbook.close();
+
+	        byte[] excelBytes = byteArrayOutputStream.toByteArray();
+
+	        HttpHeaders headers1 = new HttpHeaders();
+	        headers1.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+	        headers1.setContentDispositionFormData("attachment", "board_list.xlsx");
+
+	        return new ResponseEntity<byte[]>(excelBytes, headers1, HttpStatus.OK);
+	    }
+
+
+
 
 
 	@RequestMapping(value = "/write", method = RequestMethod.POST)
@@ -80,6 +190,7 @@ public class BoardController {
                         uploadedFile.transferTo(destinationFile); // 파일 저장
 
                         FileUp file = new FileUp();
+                        
                         file.setRealName(originalFilename);
                         file.setSaveName(saveName + extension);
                         file.setRegDate(new Date());
@@ -95,6 +206,8 @@ public class BoardController {
         }
 	    return "redirect:/board";
 	}
+	
+	
 
 	@RequestMapping(value = "/deleteBoard", method = RequestMethod.POST)
 	public String deleteBoard(@ModelAttribute("seqList") String seqList, Model model) {

@@ -9,7 +9,7 @@ public class FileUp {
     private String saveName;
     private Date regDate;
     private String savePath;
-    private int listSeq;
+    private long listSeq;
 	public int getFileSeq() {
 		return fileSeq;
 	}
@@ -40,10 +40,10 @@ public class FileUp {
 	public void setSavePath(String savePath) {
 		this.savePath = savePath;
 	}
-	public int getListSeq() {
+	public long getListSeq() {
 		return listSeq;
 	}
-	public void setListSeq(int listSeq) {
+	public void setListSeq(long listSeq) {
 		this.listSeq = listSeq;
 	}
 	@Override

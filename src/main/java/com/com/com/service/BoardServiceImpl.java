@@ -62,9 +62,16 @@ public class BoardServiceImpl implements BoardService {
    }
    
    @Override
-   public List<FileUp> getFilesByBoardSeq(long seq) {
+   public List<FileUp> getFilesByBoardSeq(Long seq) {
        return boardDao.getFilesByBoardSeq(seq);
    }
+   
+   @Override
+   public FileUp getFileBySeq(Long fileSeq) {
+       return boardDao.getFileBySeq(fileSeq);
+   }
+   
+  
    
   
    

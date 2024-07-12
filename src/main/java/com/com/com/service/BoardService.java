@@ -21,10 +21,11 @@ public interface BoardService {
   
   List<Board> searchBoard(String searchType, String searchKeyword, String startDate, String endDate); // 검색
   
-  void saveFile(FileUp file); //파일저장
+  void saveFile(FileUp file); //파일업로드
   
-  List<FileUp> getFilesByBoardSeq(long seq);// 파일목록
+  List<FileUp> getFilesByBoardSeq(Long seq);// 파일목록
   
+  FileUp getFileBySeq(Long fileSeq); // 파일다운로드
 
 }
 

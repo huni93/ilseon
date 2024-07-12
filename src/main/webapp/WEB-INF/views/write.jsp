@@ -133,11 +133,17 @@
     <div>
     <h3>첨부파일</h3>
     <ul>
-        <c:forEach var="file" items="${files}">
-            <li>${file.realName}</li>
-        </c:forEach>
-    </ul>
+    <c:forEach var="file" items="${files}">
+        <li>
+        <a href="${pageContext.request.contextPath}/download?fileSeq=${file.fileSeq}&saveName=${URLEncoder.encode(file.saveName, 'UTF-8')}">
+            ${file.realName}
+        </a>
+    </li>
+    </c:forEach>
+   </ul>
 </div>
+
+
 	
 </form>
 </body>

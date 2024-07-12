@@ -122,16 +122,26 @@
     FROM FILE_STUDY_TABLE
 </insert>
 
-<select id="getFiles" parameterType="long" resultMap="file">
-SELECT
-    b.SEQ,
-    f.REAL_NAME,
-    f.LIST_SEQ 
-FROM
-    BOARD_STUDY b
-    LEFT JOIN FILE_STUDY_TABLE f ON b.SEQ = f.LIST_SEQ
-WHERE
-    b.SEQ = #{seq}
+<select id="getFiles" parameterType="Long" resultMap="file">
+SELECT FILE_SEQ,
+         REAL_NAME,
+         SAVE_NAME,
+         REG_DATE,
+         SAVE_PATH, 
+         LIST_SEQ
+        FROM FILE_STUDY_TABLE
+        WHERE LIST_SEQ = #{listSeq,jdbcType=BIGINT}
+</select>
+
+<select id="getFileBySeq" parameterType="long" resultMap="file">
+    SELECT FILE_SEQ,
+     REAL_NAME, 
+     SAVE_NAME, 
+     REG_DATE, 
+     SAVE_PATH, 
+     LIST_SEQ
+    FROM FILE_STUDY_TABLE
+    WHERE FILE_SEQ = #{fileSeq}
 </select>
 
 </mapper>

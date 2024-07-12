@@ -68,6 +68,7 @@
    <div>
       <a href="/write">글쓰기</a>
       <button type="button" id="btnDelete">삭제</button>
+      <a href="/downloadExcel">엑셀 다운로드</a>
    </div>
      <table>
    <thead>

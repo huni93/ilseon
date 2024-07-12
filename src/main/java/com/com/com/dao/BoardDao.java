@@ -60,6 +60,7 @@ public class BoardDao {
 	        params.put("startDate", startDate);
 	        params.put("endDate", endDate);
 	        return session.selectList("com.com.com.dao.BoardDao.searchBoard", params);
+	        
 	    }
 	 
 	 
@@ -67,8 +68,13 @@ public class BoardDao {
 		 session.insert("com.com.com.dao.BoardDao.insertFile", file);
 	    }
 	    
-	    public List<FileUp> getFilesByBoardSeq(long seq) {
+	    public List<FileUp> getFilesByBoardSeq(Long seq) {
 	        return session.selectList("com.com.com.dao.BoardDao.getFiles", seq);
+	    }
+	   
+	    public FileUp getFileBySeq(Long fileSeq) {
+	       
+	        return session.selectOne("com.com.com.dao.BoardDao.getFileBySeq", fileSeq);
 	    }
 	 
 }
